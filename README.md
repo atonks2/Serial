@@ -1,2 +1,2 @@
 # Serial class for Linux
-Current version supports canonical mode only.
+Added support for both canonical and non-canonical modes.
