@@ -12,14 +12,15 @@ Serial::Serial() {
         PORT = "/dev/ttyUSB0"; /* A default to use if no port is specified */
         if (setBaud(4800) == 0) BAUDRATE = 4800; /* Use 4800 baud if no rate is specified */
         isOpen = false; /* Port isn't open yet */
-        init();
+        isCanonical = true;
+	init();
 }
  
 Serial::Serial(speed_t baud, std::string port) /* Recommended constructor */
 {
     if (setBaud(baud) == 0) BAUDRATE = baud; /* Check for valid baudrate and set the flag if it is valid */
     isOpen = false; /* Port isn't open yet */
-    // check for valid port
+    isCanonical = true;
     struct stat stat_buf; /* Used in checking if specified port exists */
     if (stat(port.c_str(), &stat_buf) == 0) /* Make sure the specified port exists */
         PORT = port; // port is valid
@@ -29,7 +30,20 @@ Serial::Serial(speed_t baud, std::string port) /* Recommended constructor */
     }
     init();
 }
- 
+
+Serial::Serial(speed_t baud, std::string port, bool canon)
+{
+	isCanonical = canon;
+	if (setBaud(baud) == 0) BAUDRATE = baud;
+	isOpen = false;
+	struct stat stat_buf;
+	if (stat(port.c_str(), &stat_buf) == 0) PORT = port;
+	else {
+		std::cout << "Device not found." << std::endl;
+		exit(-1);
+	}
+	init();
+} 
 void Serial::init() /* Open and configure the port */
 {
     /* open port for read and write, not controlling */
@@ -59,8 +73,13 @@ void Serial::init() /* Open and configure the port */
     */
     new_config.c_iflag |= IGNPAR;
     new_config.c_oflag = 0; /* use raw output */
-    new_config.c_lflag |= ICANON; /* Canonical input */
- 
+    if (isCanonical)  new_config.c_lflag |= ICANON; /* Canonical input */
+    else {
+        /* Configure for non-canonical mode */
+        new_config.c_lflag &= ~(ICANON | ECHO);
+        new_config.c_cc[VMIN] = 1;
+        new_config.c_cc[VTIME] = 0;
+    }
     tcflush(dev_fd, TCIFLUSH); /* flush serial line */
     applyNewConfig();
 }
@@ -135,14 +154,25 @@ int Serial::serialRead()
     if (!isOpen) return -1;
     int buf_size = 255; // 82 is longest NMEA Sentence
     char buf[buf_size];
-    if (tcflush(dev_fd, TCIOFLUSH < 0))
-            perror("Could not flush line: ");
+    if (tcflush(dev_fd, TCIOFLUSH < 0)) perror("Could not flush line: ");
     bytes_received = read(dev_fd, buf, buf_size);
-    if (bytes_received < 0)
-        perror("Read failed: ");
-    else
-        buf[bytes_received] = '\0'; /* Null terminate the string */
+    if (bytes_received < 0) perror("Read failed: ");
+    else buf[bytes_received] = '\0'; /* Null terminate the string */
     data.assign(buf); /* store data as a c++ string */
+    return bytes_received;
+}
+
+int Serial::serialRead(int bytes)
+{
+    if (!isOpen) return -1;
+    int buf_size = 255;
+    char buf[buf_size];
+    if (tcflush(dev_fd, TCIOFLUSH <0)) perror("Could not flush line: ");
+    if (bytes > buf_size) bytes = buf_size;
+    bytes_received = read(dev_fd, buf, bytes);
+    if (bytes_received < 0) perror("Read failed: ");
+    else buf[bytes_received] = '\0';
+    data.assign(buf);
     return bytes_received;
 }
  
