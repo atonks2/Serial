@@ -1,1 +1,2 @@
-# Serial class for Linux\n\nCurrent version supports canonical mode only.
+# Serial class for Linux
+Current version supports canonical mode only.
