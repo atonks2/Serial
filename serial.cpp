@@ -44,6 +44,7 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 	}
 	init();
 } 
+
 void Serial::init() /* Open and configure the port */
 {
     /* open port for read and write, not controlling */
@@ -84,9 +85,6 @@ void Serial::init() /* Open and configure the port */
     applyNewConfig();
 }
  
-/* Set a new baudrate after init()
-*  baud must be integer multiple of 2400
-*/
 int Serial::setBaud(speed_t baud)
 {
 	if (!isOpen) return -1;
@@ -136,7 +134,12 @@ int Serial::applyNewConfig()
 	else return -1;
 }
  
-/* return current line speed. */
+/* return current line speed. 
+*  Line speeds are defined as hexidecimal
+*  constants. cfgetispeed() returns 
+*  speed_t (unsigned int). 
+*   12 = 4800, 13 = 9600, etc
+*/
 speed_t Serial::getBaud()
 {
     if (isOpen) return cfgetispeed(&new_config);
