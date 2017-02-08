@@ -12,7 +12,7 @@ no_canon branch adds support for non-canonical mode through a new constructor.
   - Baud: B4800
   - Canonical input  
 - `Serial(speed_t baud, std::string port)`
-  - Client specifis baudrate and port
+  - Client specifies baudrate and port
   - Canonical input  
 - `Serial(speed_t baud, std::string port, bool canon)`
   - Client specifies baudrate port and input mode  
