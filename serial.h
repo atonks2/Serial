@@ -9,14 +9,16 @@ class Serial
 {
 public:
         Serial();
-        Serial(speed_t baud, std::string port);
- 
+	Serial(speed_t baud, std::string port); /* Assume canonical input */
+	Serial(speed_t baud, std::string port, bool canon);
+
         int setBaud(speed_t baud);
 	int applyNewConfig();
-        speed_t getBaud();
-        termios getConfig();
+        int serialRead(); /* Canonical read (line) */
+	int serialRead(int bytes); /* non-canonical read */
 
-        int serialRead();
+	speed_t getBaud();
+        termios getConfig();
         std::string getData();
          
         ~Serial();
@@ -26,7 +28,7 @@ private:
         int dev_fd, bytes_received;
         speed_t BAUDRATE;
         std::string PORT, data;
-        bool isOpen;
+        bool isOpen, isCanonical;
 };
  
 #endif
