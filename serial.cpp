@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-// Testing Windows Git
 Serial::Serial() {
         PORT = "/dev/ttyUSB0"; /* A default to use if no port is specified */
         if (setBaud(4800) == 0) BAUDRATE = 4800; /* Use 4800 baud if no rate is specified */
