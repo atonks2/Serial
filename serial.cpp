@@ -40,7 +40,7 @@ Serial::Serial() {
 	init();
 }
 
-Serial::Serial(speed_t baud, std::string port) /* Recommended constructor */
+Serial::Serial(speed_t baud, std::string port)
 {
 	if (setBaud(baud) == 0) BAUDRATE = baud; /* Check for valid baudrate and set the flag if it is valid */
 	isOpen = false; /* Port isn't open yet */
@@ -60,52 +60,57 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 	isCanonical = canon;
 	if (setBaud(baud) == 0) BAUDRATE = baud;
 	isOpen = false;
+
+	// See if specified port exists. Port not open yet, so can't use
+	// isatty(int fd).
 	struct stat stat_buf;
 	if (stat(port.c_str(), &stat_buf) == 0) PORT = port;
-	else {
+	else {  // Port doesn't exist
 		std::cout << "Device not found." << std::endl;
 		exit(-1);
 	}
 	init();
 }
 
-void Serial::init() /* Open and configure the port */
+// Open and configure the port
+void Serial::init()
 {
-	/* open port for read and write, not controlling */
-	dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY); /* open port for read/write, not controlling */
+	// open port for read and write, not controlling
+	dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
 	if (dev_fd < 0) {
 		perror("Failed to open device: ");
 		exit(-1);
 	}
-	else if (dev_fd >= 0)
-		isOpen = true;
+	else if (dev_fd >= 0) isOpen = true;
 
-	tcgetattr(dev_fd, &old_config); /* save current port settings */
+	// Made a copy of the current configuration so it can be
+	// restored in destructor.
+	tcgetattr(dev_fd, &old_config);
 
 	// define configuration vars for termios struct
-	memset(&new_config, 0, sizeof(new_config)); /* clear mem first */
-	tcgetattr(dev_fd, &new_config); /* Per GNU C, get current config and modify the flags you need. Don't start from scratch */
-	/*
-	   BAUDRATE: Integer multiple of 2400
-	   CRTSCTS: Hardware flow control
-	   CS8: 8N1
-	   CLOCAL: No modem control. (local device)
-	   CREAD: Receive chars
-	*/
-	new_config.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
-	/*
-	   IGNPAR: Ignore parity errors
-	*/
-	new_config.c_iflag |= IGNPAR;
-	new_config.c_oflag = 0; /* use raw output */
-	if (isCanonical)  new_config.c_lflag |= ICANON; /* Canonical input */
+	memset(&term, 0, sizeof(term));  // Clear junk from location of term to start with clean slate
+	tcgetattr(dev_fd, &term);  // Per GNU C, get current config and modify the flags you need. Don't start from scratch.
+	
+	// BAUDRATE: Integer multiple of 2400
+	// CRTSCTS: Hardware flow control
+	// CS8: 8N1
+	// CLOCAL: No modem control. (local device)
+	// CREAD: Receive chars
+	term.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
+
+    // IGNPAR: Ignore parity errors
+	term.c_iflag |= IGNPAR;
+	// 0 for raw output
+	term.c_oflag = 0;
+	// Setting input mode
+	if (isCanonical)  term.c_lflag |= ICANON;  // Canonical input
 	else {
-		/* Configure for non-canonical mode */
-		new_config.c_lflag &= ~(ICANON | ECHO);
-		new_config.c_cc[VMIN] = 1;
-		new_config.c_cc[VTIME] = 0;
+		//Configure non-canonical mode
+		term.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
+		term.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
+		term.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
 	}
-	tcflush(dev_fd, TCIFLUSH); /* flush serial line */
+	tcflush(dev_fd, TCIFLUSH);
 	applyNewConfig();
 }
 
@@ -115,28 +120,28 @@ int Serial::setBaud(speed_t baud)
 	int status = -1;
 	switch (baud) {
 	case 2400:
-		status = cfsetspeed(&new_config, B2400);
+		status = cfsetspeed(&term, B2400);
 		break;
 	case 4800:
-		status = cfsetspeed(&new_config, B4800);
+		status = cfsetspeed(&term, B4800);
 		break;
 	case 9600:
-		status = cfsetspeed(&new_config, B9600);
+		status = cfsetspeed(&term, B9600);
 		break;
 	case 19200:
-		status = cfsetspeed(&new_config, B19200);
+		status = cfsetspeed(&term, B19200);
 		break;
 	case 38400:
-		status = cfsetspeed(&new_config, B38400);
+		status = cfsetspeed(&term, B38400);
 		break;
 	case 57600:
-		status = cfsetspeed(&new_config, B57600);
+		status = cfsetspeed(&term, B57600);
 		break;
 	case 115200:
-		status = cfsetspeed(&new_config, B115200);
+		status = cfsetspeed(&term, B115200);
 		break;
 	case 230400:
-		status = cfsetspeed(&new_config, B230400);
+		status = cfsetspeed(&term, B230400);
 		break;
 	default:
 		std::cout << "Invalid baudrate requested.\n";
@@ -152,28 +157,32 @@ int Serial::setBaud(speed_t baud)
 int Serial::applyNewConfig()
 {
 	if (isOpen) {
-		if (tcsetattr(dev_fd, TCSANOW, &new_config) < 0) perror("Could not apply configuration: ");
+		if (tcsetattr(dev_fd, TCSANOW, &term) < 0) perror("Could not apply configuration: ");
 		else return 0;
 	}
 	else return -1;
 }
 
-/* return current line speed.
-*  Line speeds are defined as hexidecimal
-*  constants. cfgetispeed() returns
-*  speed_t (unsigned int).
-*   12 = 4800, 13 = 9600, etc
-*/
 speed_t Serial::getBaud()
 {
-	if (isOpen) return cfgetispeed(&new_config);
+	if (isOpen) return cfgetispeed(&term);
 	else return 1;
 }
 
-/* return current port coniguration flags */
 termios Serial::getConfig()
 {
-	return new_config;
+	return term;
+}
+
+char* setupRead()
+{
+	if (!isOpen) return -1;
+	if (tcflush(dev_fd, TCIOFLUSH < 0)) {
+		perror("Could not flush line: ");
+		return -1;
+	}
+	char* buf = new char[255];
+	return buf
 }
 
 int Serial::serialRead()
@@ -184,8 +193,8 @@ int Serial::serialRead()
 	if (tcflush(dev_fd, TCIOFLUSH < 0)) perror("Could not flush line: ");
 	bytes_received = read(dev_fd, buf, buf_size);
 	if (bytes_received < 0) perror("Read failed: ");
-	else buf[bytes_received] = '\0'; /* Null terminate the string */
-	data.assign(buf); /* store data as a c++ string */
+	else buf[bytes_received] = '\0';  // Null terminate the string
+	data.assign(buf);  // store data as a c++ string
 	return bytes_received;
 }
 

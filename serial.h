@@ -86,7 +86,7 @@ private:
     // old_config stores the configuration to
     // be restored by destructor. new_config is
     // the active port.
-    struct termios old_config, new_config;
+    struct termios old_config, term;
 
     int dev_fd, bytes_received;
     speed_t BAUDRATE;
