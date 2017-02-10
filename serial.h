@@ -32,8 +32,8 @@ SOFTWARE.
 class Serial
 {
 public:
-	// Default constructor assumes canonical input,
-	// PORT = /dev/ttyUSB0 and BAUDRATE = 4800
+    // Default constructor assumes canonical input,
+    // PORT = /dev/ttyUSB0 and BAUDRATE = 4800
     Serial();
 
     // speed_t is termios version of an unsigned int
