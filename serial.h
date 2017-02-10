@@ -36,27 +36,64 @@ public:
 	// PORT = /dev/ttyUSB0 and BAUDRATE = 4800
 	Serial();
 
+    // speed_t is termios version of an unsigned int
+    // Supported baudrates:
+    //   2400, 4800, 9600, 19200, 38400, 57600,
+    //   115200, 230400
+    // This constructor also assumes canonical input
+	Serial(speed_t baud, std::string port);
 
-	Serial(speed_t baud, std::string port); /* Assume canonical input */
+    // Same as previous constructor, except the
+    // calling code specifies input mode with
+    // 'bool canon'
 	Serial(speed_t baud, std::string port, bool canon);
 
-	int setBaud(speed_t baud);
-	int applyNewConfig();
-	int serialRead(); /* Canonical read (line) */
-	int serialRead(int bytes); /* non-canonical read */
+    // Sets baudrate in termios struct, but doesn't 
+    // apply the change. Must call applyNewConfig() 
+    // before any change is applied to the port.
+    int setBaud(speed_t baud);
 
+    // Calls tcsetattr() to apply changes to the
+    // termios struct.
+	int applyNewConfig();
+
+    // Method for canonical read
+    // Returns # of bytes read.
+	int serialRead();
+
+    // Method for non-canonical read
+    // Returns # of bytes read.
+	int serialRead(int bytes);
+
+    // Returns current baudrate. Values in termios.h
+    // are hexidecimal constants. Ex:
+    // #define B4800 0x0000000c
+    // Because of this, the return valud of this
+    // function if baudrate = 4800 is 12.
 	speed_t getBaud();
+
+    // Returns entire termios struct
 	termios getConfig();
+
 	std::string getData();
 
 	~Serial();
 private:
+    // Opens port for read/write, sets termios
+    // flags, then applys the configuration.
 	void init();
+
+    // old_config stores the configuration to
+    // be restored by destructor. new_config is
+    // the active port.
 	struct termios old_config, new_config;
+
 	int dev_fd, bytes_received;
 	speed_t BAUDRATE;
 	std::string PORT, data;
-	bool isOpen, isCanonical;
+	
+    // isOpen refers to the port.
+    bool isOpen, isCanonical;
 };
 
 #endif // SERIAL_H
