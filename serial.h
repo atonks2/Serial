@@ -65,6 +65,10 @@ public:
     // Returns # of bytes read.
     int serialRead(int bytes);
 
+    int flush();
+    // Writes to serial port
+    int serialWrite(std::string str);
+
     // Returns current baudrate. Values in termios.h
     // are hexidecimal constants. Ex:
     // #define B4800 0x0000000c
@@ -83,6 +87,8 @@ private:
     // flags, then applys the configuration.
     void init();
 
+    // Helper function needs access to private variable isOpen
+    int setupRead();
     // old_config stores the configuration to
     // be restored by destructor. new_config is
     // the active port.

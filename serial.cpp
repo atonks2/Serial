@@ -33,23 +33,23 @@ SOFTWARE.
 #include <fcntl.h>
 
 Serial::Serial() {
-	PORT = "/dev/ttyUSB0"; /* A default to use if no port is specified */
-	if (setBaud(4800) == 0) BAUDRATE = 4800; /* Use 4800 baud if no rate is specified */
-	isOpen = false; /* Port isn't open yet */
+	PORT = "/dev/ttyUSB0";
+	if (setBaud(4800) == 0) BAUDRATE = 4800;
+    isOpen = false;
 	isCanonical = true;
 	init();
 }
 
 Serial::Serial(speed_t baud, std::string port)
 {
-	if (setBaud(baud) == 0) BAUDRATE = baud; /* Check for valid baudrate and set the flag if it is valid */
-	isOpen = false; /* Port isn't open yet */
+	if (setBaud(baud) == 0) BAUDRATE = baud;  // Check for valid baudrate and set the flag if it is valid
+	isOpen = false;
 	isCanonical = true;
-	struct stat stat_buf; /* Used in checking if specified port exists */
-	if (stat(port.c_str(), &stat_buf) == 0) /* Make sure the specified port exists */
+	struct stat stat_buf;// Used in checking if specified port exists
+	if (stat(port.c_str(), &stat_buf) == 0)  // Make sure the specified port exists
 		PORT = port; // port is valid
 	else {
-		std::cout << "Device not found." << std::endl; /* Port not found */
+		std::cout << "Device not found." << std::endl;  // Port not found
 		exit(-1);
 	}
 	init();
@@ -75,7 +75,7 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 // Open and configure the port
 void Serial::init()
 {
-	// open port for read and write, not controlling
+	// open port for read and write, not controlling, ignore DCD line
 	dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
 	if (dev_fd < 0) {
 		perror("Failed to open device: ");
@@ -103,7 +103,7 @@ void Serial::init()
 	// 0 for raw output
 	term.c_oflag = 0;
 	// Setting input mode
-	if (isCanonical)  term.c_lflag |= ICANON;  // Canonical input
+	if (isCanonical)  term.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
 	else {
 		//Configure non-canonical mode
 		term.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
@@ -117,41 +117,51 @@ void Serial::init()
 int Serial::setBaud(speed_t baud)
 {
 	if (!isOpen) return -1;
-	int status = -1;
+	int status_i = -1;
+    int status_o = -1;
+
 	switch (baud) {
 	case 2400:
-		status = cfsetspeed(&term, B2400);
+		status_i = cfsetispeed(&term, B2400);
+        status_o = cfsetospeed(&term, B2400);
 		break;
 	case 4800:
-		status = cfsetspeed(&term, B4800);
+		status_i = cfsetispeed(&term, B4800);
+        status_o = cfsetospeed(&term, B4800);
 		break;
 	case 9600:
-		status = cfsetspeed(&term, B9600);
+		status_i = cfsetispeed(&term, B9600);
+        status_o = cfsetospeed(&term, B9600);
 		break;
 	case 19200:
-		status = cfsetspeed(&term, B19200);
+		status_i = cfsetispeed(&term, B19200);
+        status_o = cfsetospeed(&term, B19200);
 		break;
 	case 38400:
-		status = cfsetspeed(&term, B38400);
+		status_i = cfsetispeed(&term, B38400);
+        status_o = cfsetospeed(&term, B38400);
 		break;
 	case 57600:
-		status = cfsetspeed(&term, B57600);
+		status_i = cfsetispeed(&term, B57600);
+        status_o = cfsetospeed(&term, B57600);
 		break;
 	case 115200:
-		status = cfsetspeed(&term, B115200);
+		status_i = cfsetispeed(&term, B115200);
+        status_o = cfsetospeed(&term, B115200);
 		break;
 	case 230400:
-		status = cfsetspeed(&term, B230400);
+		status_i = cfsetispeed(&term, B230400);
+        status_o = cfsetospeed(&term, B230400);
 		break;
 	default:
 		std::cout << "Invalid baudrate requested.\n";
 		return -1;
 	}
-	if (status < 0) {
+	if (status_i < 0 || status_o < 0) {
 		perror("Failed to set requested baudrate: ");
 		return -1;
 	}
-	else return status;
+	else return status_i;
 }
 
 int Serial::applyNewConfig()
@@ -159,57 +169,70 @@ int Serial::applyNewConfig()
 	if (isOpen) {
 		if (tcsetattr(dev_fd, TCSANOW, &term) < 0) perror("Could not apply configuration: ");
 		else return 0;
-	}
+    }
 	else return -1;
 }
 
 speed_t Serial::getBaud()
 {
-	if (isOpen) return cfgetispeed(&term);
-	else return 1;
-}
+    return cfgetispeed(&term);
+	}
 
 termios Serial::getConfig()
 {
 	return term;
 }
 
-char* setupRead()
+// Helper function checks if port is open,
+// then flushes the serial line.
+int Serial::setupRead()
 {
 	if (!isOpen) return -1;
 	if (tcflush(dev_fd, TCIOFLUSH < 0)) {
 		perror("Could not flush line: ");
 		return -1;
 	}
-	char* buf = new char[255];
-	return buf
+    else return 0;
 }
 
 int Serial::serialRead()
 {
-	if (!isOpen) return -1;
-	int buf_size = 255; // 82 is longest NMEA Sentence
+	if (setupRead() < 0) return -1;
+    int buf_size = 255; // 82 is longest NMEA Sentence
 	char buf[buf_size];
-	if (tcflush(dev_fd, TCIOFLUSH < 0)) perror("Could not flush line: ");
 	bytes_received = read(dev_fd, buf, buf_size);
 	if (bytes_received < 0) perror("Read failed: ");
 	else buf[bytes_received] = '\0';  // Null terminate the string
-	data.assign(buf);  // store data as a c++ string
+	data.assign(buf);  // store data as std::string
 	return bytes_received;
 }
 
 int Serial::serialRead(int bytes)
 {
-	if (!isOpen) return -1;
-	int buf_size = 255;
+	if (setupRead() < 0) return -1;
+    int buf_size = bytes;
 	char buf[buf_size];
-	if (tcflush(dev_fd, TCIOFLUSH < 0)) perror("Could not flush line: ");
-	if (bytes > buf_size) bytes = buf_size;
 	bytes_received = read(dev_fd, buf, bytes);
 	if (bytes_received < 0) perror("Read failed: ");
-	else buf[bytes_received] = '\0';
-	data.assign(buf);
+	else buf[bytes_received] = '\0';  // Null terminated
+	data.assign(buf);  // Store as std::string
 	return bytes_received;
+}
+
+int Serial::flush()
+{
+    return tcflush(dev_fd, TCIOFLUSH);
+}
+
+int Serial::serialWrite(std::string str)
+{
+    if (!isOpen) return -1;
+    int write_status =  write(dev_fd, str.c_str(), str.length());
+    if (write_status < 0) {
+        perror("Failed to write to port: ");
+        return -1;
+    }
+    else return write_status;
 }
 
 std::string Serial::getData()
