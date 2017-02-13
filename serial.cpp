@@ -154,11 +154,8 @@ int Serial::setBaud(speed_t baud)
 
 int Serial::applyNewConfig()
 {
-	if (isOpen) {
-		if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) perror("Could not apply configuration: ");
-		else return 0;
-    }
-	else return -1;
+	if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) perror("Could not apply configuration: ");
+	else return 0;
 }
 
 speed_t Serial::getBaud()
