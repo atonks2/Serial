@@ -73,7 +73,7 @@ void Serial::init()
 {
     tcgetattr(dev_fd, &oldConfig);
 	
-    // memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
+    memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
 	tcgetattr(dev_fd, &terminalConfiguration);
 
 	// TERMIOS CONFIGURATION
@@ -83,7 +83,7 @@ void Serial::init()
 	// CS8: 8N1
 	// CLOCAL: No modem control. (local device)
 	// CREAD: Receive chars
-	terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | CREAD);
+	terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
 
     // IGNPAR: Ignore parity errors
 	terminalConfiguration.c_iflag |= IGNPAR;
