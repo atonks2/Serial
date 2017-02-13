@@ -46,7 +46,6 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 {
 	// Make a copy of the current configuration so it can be
 	// restored in destructor.
-	tcgetattr(dev_fd, &oldConfig);
 	isCanonical = canon;
 	if (setBaud(baud) == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
 	isOpen = false;
@@ -70,7 +69,9 @@ void Serial::init()
 	}
 	else isOpen = true;
 
-	memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
+    tcgetattr(dev_fd, &oldConfig);
+	
+    memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
 	tcgetattr(dev_fd, &terminalConfiguration);
 
 	// TERMIOS CONFIGURATION
