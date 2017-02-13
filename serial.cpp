@@ -47,7 +47,6 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 	// Make a copy of the current configuration so it can be
 	// restored in destructor.
 	isCanonical = canon;
-    else isOpen = true;
 	if (setBaud(baud) == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
 	isOpen = false;
 	struct stat stat_buf;  // See if specified port exists
@@ -62,6 +61,8 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
         perror("Failed to open device: ");
         exit(-1);
     }
+    else isOpen = true;
+
 	init();
 }
 
