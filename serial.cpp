@@ -92,7 +92,7 @@ void Serial::init()
 	terminalConfiguration.c_oflag = 0;
 
 	// Setting input mode
-	if (isCanonical)  terminalConfiguration.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
+	if (isCanonical == true)  terminalConfiguration.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
 	else {
 		//Configure non-canonical mode
 		terminalConfiguration.c_lflag &= ~(ICANON | ECHO | ECHOE);  // Disable canonical mode and echo
