@@ -58,7 +58,7 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
     // open port for read and write, not controlling, ignore DCD line
     dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
     if (dev_fd < 0) {
-        perror("In function: Serial()\n Failed to open device: ");
+        perror("In function Serial() failed to open device: ");
         exit(-1);
     }
     else {
@@ -146,7 +146,7 @@ int Serial::setBaud(speed_t baud)
 		return -1;
 	}
 	if (status_i < 0 || status_o < 0) {
-		perror("In function: setBaud()\nFailed to set requested baudrate: ");
+		perror("In function setBaud() failed to set requested baudrate: ");
 		return -1;
 	}
 	else return status_i;
