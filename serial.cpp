@@ -182,14 +182,7 @@ int Serial::setupRead()
 
 int Serial::serialRead()
 {
-	if (setupRead() < 0) return -1;
-    int buf_size = 255; // 82 is longest NMEA Sentence
-	char buf[buf_size];
-	bytesReceived = read(dev_fd, buf, buf_size);
-	if (bytesReceived < 0) perror("In function serialRead()\nRead failed: ");
-	else buf[bytesReceived] = '\0';  // Null terminate the string
-	serialData.assign(buf);  // store serialData as std::string
-	return bytesReceived;
+	return serialRead(255);
 }
 
 int Serial::serialRead(int bytes)
