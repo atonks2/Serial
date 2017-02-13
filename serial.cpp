@@ -94,7 +94,7 @@ void Serial::init()
 	// Setting input mode
 	if (isCanonical == true) {
         std::cout << "Setting up canonical mode" << std::endl;
-        terminalConfiguration.c_lflag |= (ICANON /*| ECHO | ECHOE*/);  // Canonical input
+        terminalConfiguration.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
     }
 	else {
 		//Configure non-canonical mode
@@ -108,51 +108,42 @@ void Serial::init()
 
 int Serial::setBaud(speed_t baud)
 {
-	int status_i = -1;
-    int status_o = -1;
+	int status = -1;
 
 	switch (baud) {
 	case 2400:
-		status_i = cfsetispeed(&terminalConfiguration, B2400);
-        status_o = cfsetospeed(&terminalConfiguration, B2400);
+		status = cfsetspeed(&terminalConfiguration, B2400);
 		break;
 	case 4800:
-		status_i = cfsetispeed(&terminalConfiguration, B4800);
-        status_o = cfsetospeed(&terminalConfiguration, B4800);
+		status = cfsetspeed(&terminalConfiguration, B4800);
 		break;
 	case 9600:
-		status_i = cfsetispeed(&terminalConfiguration, B9600);
-        status_o = cfsetospeed(&terminalConfiguration, B9600);
+		status = cfsetspeed(&terminalConfiguration, B9600);
 		break;
 	case 19200:
-		status_i = cfsetispeed(&terminalConfiguration, B19200);
-        status_o = cfsetospeed(&terminalConfiguration, B19200);
+		status = cfsetspeed(&terminalConfiguration, B19200);
 		break;
 	case 38400:
-		status_i = cfsetispeed(&terminalConfiguration, B38400);
-        status_o = cfsetospeed(&terminalConfiguration, B38400);
+		status = cfsetspeed(&terminalConfiguration, B38400);
 		break;
 	case 57600:
-		status_i = cfsetispeed(&terminalConfiguration, B57600);
-        status_o = cfsetospeed(&terminalConfiguration, B57600);
+		status = cfsetspeed(&terminalConfiguration, B57600);
 		break;
 	case 115200:
-		status_i = cfsetispeed(&terminalConfiguration, B115200);
-        status_o = cfsetospeed(&terminalConfiguration, B115200);
+		status = cfsetspeed(&terminalConfiguration, B115200);
 		break;
 	case 230400:
-		status_i = cfsetispeed(&terminalConfiguration, B230400);
-        status_o = cfsetospeed(&terminalConfiguration, B230400);
+		status = cfsetspeed(&terminalConfiguration, B230400);
 		break;
 	default:
 		std::cout << "Invalid baudrate requested.\n";
 		return -1;
 	}
-	if (status_i < 0 || status_o < 0) {
+	if (status < 0) {
 		perror("In function setBaud() failed to set requested baudrate: ");
 		return -1;
 	}
-	else return status_i;
+	else return status;
 }
 
 int Serial::applyNewConfig()
