@@ -61,8 +61,10 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
         perror("In function: Serial()\n Failed to open device: ");
         exit(-1);
     }
-    else isOpen = true;
-
+    else {
+        std::cout << "dev_fd: " << dev_fd << std::endl;
+        isOpen = true;
+    }
 	init();
 }
 
