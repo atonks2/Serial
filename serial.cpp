@@ -34,36 +34,23 @@ SOFTWARE.
 
 Serial::Serial() {
 	PORT = "/dev/ttyUSB0";
-	if (setBaud(4800) == 0) BAUDRATE = 4800;
-    isOpen = false;
-	isCanonical = true;
-	init();
+	Serial(4800, PORT, true);
 }
 
 Serial::Serial(speed_t baud, std::string port)
 {
-	if (setBaud(baud) == 0) BAUDRATE = baud;  // Check for valid baudrate and set the flag if it is valid
-	isOpen = false;
-	isCanonical = true;
-	struct stat stat_buf;// Used in checking if specified port exists
-	if (stat(port.c_str(), &stat_buf) == 0)  // Make sure the specified port exists
-		PORT = port; // port is valid
-	else {
-		std::cout << "Device not found." << std::endl;  // Port not found
-		exit(-1);
-	}
-	init();
+	Serial(baud, port, true);
 }
 
 Serial::Serial(speed_t baud, std::string port, bool canon)
 {
+	// Make a copy of the current configuration so it can be
+	// restored in destructor.
+	tcgetattr(dev_fd, &oldConfig);
 	isCanonical = canon;
-	if (setBaud(baud) == 0) BAUDRATE = baud;
+	if ((baud % 2400) == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
 	isOpen = false;
-
-	// See if specified port exists. Port not open yet, so can't use
-	// isatty(int fd).
-	struct stat stat_buf;
+	struct stat stat_buf;  // See if specified port exists
 	if (stat(port.c_str(), &stat_buf) == 0) PORT = port;
 	else {  // Port doesn't exist
 		std::cout << "Device not found." << std::endl;
@@ -83,32 +70,31 @@ void Serial::init()
 	}
 	else if (dev_fd >= 0) isOpen = true;
 
-	// Made a copy of the current configuration so it can be
-	// restored in destructor.
-	tcgetattr(dev_fd, &old_config);
+	memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
+	tcgetattr(dev_fd, &terminalConfiguration);
 
-	// define configuration vars for termios struct
-	memset(&term, 0, sizeof(term));  // Clear junk from location of term to start with clean slate
-	tcgetattr(dev_fd, &term);  // Per GNU C, get current config and modify the flags you need. Don't start from scratch.
+	// TERMIOS CONFIGURATION
 	
 	// BAUDRATE: Integer multiple of 2400
 	// CRTSCTS: Hardware flow control
 	// CS8: 8N1
 	// CLOCAL: No modem control. (local device)
 	// CREAD: Receive chars
-	term.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
+	terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | CREAD);
 
     // IGNPAR: Ignore parity errors
-	term.c_iflag |= IGNPAR;
+	terminalConfiguration.c_iflag |= IGNPAR;
+
 	// 0 for raw output
-	term.c_oflag = 0;
+	terminalConfiguration.c_oflag = 0;
+
 	// Setting input mode
-	if (isCanonical)  term.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
+	if (isCanonical)  terminalConfiguration.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
 	else {
 		//Configure non-canonical mode
-		term.c_lflag &= ~(ICANON | ECHO);  // Disable canonical mode and echo
-		term.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
-		term.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
+		terminalConfiguration.c_lflag &= ~(ICANON | ECHO | ECHOE);  // Disable canonical mode and echo
+		terminalConfiguration.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
+		terminalConfiguration.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
 	}
 	tcflush(dev_fd, TCIFLUSH);
 	applyNewConfig();
@@ -122,36 +108,36 @@ int Serial::setBaud(speed_t baud)
 
 	switch (baud) {
 	case 2400:
-		status_i = cfsetispeed(&term, B2400);
-        status_o = cfsetospeed(&term, B2400);
+		status_i = cfsetispeed(&terminalConfiguration, B2400);
+        status_o = cfsetospeed(&terminalConfiguration, B2400);
 		break;
 	case 4800:
-		status_i = cfsetispeed(&term, B4800);
-        status_o = cfsetospeed(&term, B4800);
+		status_i = cfsetispeed(&terminalConfiguration, B4800);
+        status_o = cfsetospeed(&terminalConfiguration, B4800);
 		break;
 	case 9600:
-		status_i = cfsetispeed(&term, B9600);
-        status_o = cfsetospeed(&term, B9600);
+		status_i = cfsetispeed(&terminalConfiguration, B9600);
+        status_o = cfsetospeed(&terminalConfiguration, B9600);
 		break;
 	case 19200:
-		status_i = cfsetispeed(&term, B19200);
-        status_o = cfsetospeed(&term, B19200);
+		status_i = cfsetispeed(&terminalConfiguration, B19200);
+        status_o = cfsetospeed(&terminalConfiguration, B19200);
 		break;
 	case 38400:
-		status_i = cfsetispeed(&term, B38400);
-        status_o = cfsetospeed(&term, B38400);
+		status_i = cfsetispeed(&terminalConfiguration, B38400);
+        status_o = cfsetospeed(&terminalConfiguration, B38400);
 		break;
 	case 57600:
-		status_i = cfsetispeed(&term, B57600);
-        status_o = cfsetospeed(&term, B57600);
+		status_i = cfsetispeed(&terminalConfiguration, B57600);
+        status_o = cfsetospeed(&terminalConfiguration, B57600);
 		break;
 	case 115200:
-		status_i = cfsetispeed(&term, B115200);
-        status_o = cfsetospeed(&term, B115200);
+		status_i = cfsetispeed(&terminalConfiguration, B115200);
+        status_o = cfsetospeed(&terminalConfiguration, B115200);
 		break;
 	case 230400:
-		status_i = cfsetispeed(&term, B230400);
-        status_o = cfsetospeed(&term, B230400);
+		status_i = cfsetispeed(&terminalConfiguration, B230400);
+        status_o = cfsetospeed(&terminalConfiguration, B230400);
 		break;
 	default:
 		std::cout << "Invalid baudrate requested.\n";
@@ -167,7 +153,7 @@ int Serial::setBaud(speed_t baud)
 int Serial::applyNewConfig()
 {
 	if (isOpen) {
-		if (tcsetattr(dev_fd, TCSANOW, &term) < 0) perror("Could not apply configuration: ");
+		if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) perror("Could not apply configuration: ");
 		else return 0;
     }
 	else return -1;
@@ -175,12 +161,12 @@ int Serial::applyNewConfig()
 
 speed_t Serial::getBaud()
 {
-    return cfgetispeed(&term);
+    return cfgetispeed(&terminalConfiguration);
 	}
 
 termios Serial::getConfig()
 {
-	return term;
+	return terminalConfiguration;
 }
 
 // Helper function checks if port is open,
@@ -200,11 +186,11 @@ int Serial::serialRead()
 	if (setupRead() < 0) return -1;
     int buf_size = 255; // 82 is longest NMEA Sentence
 	char buf[buf_size];
-	bytes_received = read(dev_fd, buf, buf_size);
-	if (bytes_received < 0) perror("Read failed: ");
-	else buf[bytes_received] = '\0';  // Null terminate the string
-	data.assign(buf);  // store data as std::string
-	return bytes_received;
+	bytesReceived = read(dev_fd, buf, buf_size);
+	if (bytesReceived < 0) perror("Read failed: ");
+	else buf[bytesReceived] = '\0';  // Null terminate the string
+	serialData.assign(buf);  // store serialData as std::string
+	return bytesReceived;
 }
 
 int Serial::serialRead(int bytes)
@@ -212,11 +198,11 @@ int Serial::serialRead(int bytes)
 	if (setupRead() < 0) return -1;
     int buf_size = bytes;
 	char buf[buf_size];
-	bytes_received = read(dev_fd, buf, bytes);
-	if (bytes_received < 0) perror("Read failed: ");
-	else buf[bytes_received] = '\0';  // Null terminated
-	data.assign(buf);  // Store as std::string
-	return bytes_received;
+	bytesReceived = read(dev_fd, buf, bytes);
+	if (bytesReceived < 0) perror("Read failed: ");
+	else buf[bytesReceived] = '\0';  // Null terminated
+	serialData.assign(buf);  // Store as std::string
+	return bytesReceived;
 }
 
 int Serial::flush()
@@ -235,14 +221,14 @@ int Serial::serialWrite(std::string str)
     else return write_status;
 }
 
-std::string Serial::getData()
+std::string Serial::getserialData()
 {
-	if (isOpen) return data;
+	if (isOpen) return serialData;
 	else return "Open serial port first!\n";
 }
 
 Serial::~Serial()
 {
-	tcsetattr(dev_fd, TCSANOW, &old_config); /* Leave port how we found it. */
+	tcsetattr(dev_fd, TCSANOW, &oldConfig); /* Leave port how we found it. */
 	close(dev_fd); /* close the port */
 }

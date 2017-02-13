@@ -89,14 +89,19 @@ private:
 
     // Helper function needs access to private variable isOpen
     int setupRead();
+
     // old_config stores the configuration to
     // be restored by destructor. new_config is
     // the active port.
-    struct termios old_config, term;
+    struct termios oldConfig, terminalConfiguration;
 
-    int dev_fd, bytes_received;
-    speed_t BAUDRATE;
-    std::string PORT, data;
+    int dev_fd, bytesReceived;
+
+	// Requested baudrate is stored here after ensuring its a valid speed.
+	speed_t BAUDRATE;
+
+	// Requested Port stored here after ensuring it exists.
+    std::string PORT, serialData;
 	
     // isOpen refers to the port.
     bool isOpen, isCanonical;
