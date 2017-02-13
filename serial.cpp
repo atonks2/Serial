@@ -68,7 +68,7 @@ void Serial::init()
 		perror("Failed to open device: ");
 		exit(-1);
 	}
-	else if (dev_fd >= 0) isOpen = true;
+	else isOpen = true;
 
 	memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
 	tcgetattr(dev_fd, &terminalConfiguration);
