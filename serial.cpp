@@ -48,7 +48,7 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 	// restored in destructor.
 	tcgetattr(dev_fd, &oldConfig);
 	isCanonical = canon;
-	if ((baud % 2400) == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
+	if (setBaud == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
 	isOpen = false;
 	struct stat stat_buf;  // See if specified port exists
 	if (stat(port.c_str(), &stat_buf) == 0) PORT = port;
@@ -102,7 +102,6 @@ void Serial::init()
 
 int Serial::setBaud(speed_t baud)
 {
-	if (!isOpen) return -1;
 	int status_i = -1;
     int status_o = -1;
 
