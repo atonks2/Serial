@@ -58,7 +58,7 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
     // open port for read and write, not controlling, ignore DCD line
     dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
     if (dev_fd < 0) {
-        perror("Failed to open device: ");
+        perror("In function: Serial()\n Failed to open device: ");
         exit(-1);
     }
     else isOpen = true;
@@ -144,7 +144,7 @@ int Serial::setBaud(speed_t baud)
 		return -1;
 	}
 	if (status_i < 0 || status_o < 0) {
-		perror("Failed to set requested baudrate: ");
+		perror("In function: setBaud()\nFailed to set requested baudrate: ");
 		return -1;
 	}
 	else return status_i;
@@ -187,7 +187,7 @@ int Serial::serialRead()
     int buf_size = 255; // 82 is longest NMEA Sentence
 	char buf[buf_size];
 	bytesReceived = read(dev_fd, buf, buf_size);
-	if (bytesReceived < 0) perror("Read failed: ");
+	if (bytesReceived < 0) perror("In function serialRead()\nRead failed: ");
 	else buf[bytesReceived] = '\0';  // Null terminate the string
 	serialData.assign(buf);  // store serialData as std::string
 	return bytesReceived;
@@ -223,7 +223,7 @@ int Serial::serialWrite(std::string str)
 
 std::string Serial::getData()
 {
-	if (isOpen) return serialData;
+	//if (isOpen) return serialData;
 	else return "Open serial port first!\n";
 }
 
