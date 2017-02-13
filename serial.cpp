@@ -224,7 +224,7 @@ int Serial::serialWrite(std::string str)
 std::string Serial::getData()
 {
 	//if (isOpen) return serialData;
-	else return "Open serial port first!\n";
+	return "Open serial port first!\n";
 }
 
 Serial::~Serial()
