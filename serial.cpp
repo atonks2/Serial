@@ -47,6 +47,13 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 	// Make a copy of the current configuration so it can be
 	// restored in destructor.
 	isCanonical = canon;
+    // open port for read and write, not controlling, ignore DCD line
+    dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
+    if (dev_fd < 0) {
+        perror("Failed to open device: ");
+        exit(-1);
+    }
+    else isOpen = true;
 	if (setBaud(baud) == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
 	isOpen = false;
 	struct stat stat_buf;  // See if specified port exists
@@ -61,14 +68,6 @@ Serial::Serial(speed_t baud, std::string port, bool canon)
 // Open and configure the port
 void Serial::init()
 {
-	// open port for read and write, not controlling, ignore DCD line
-	dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
-	if (dev_fd < 0) {
-		perror("Failed to open device: ");
-		exit(-1);
-	}
-	else isOpen = true;
-
     tcgetattr(dev_fd, &oldConfig);
 	
     memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
