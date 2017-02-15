@@ -174,7 +174,7 @@ int Serial::setupRead()
 
 int Serial::serialRead()
 {
-	return serialRead(255);
+	return serialRead(255);  // Request 255 bytes. Will return when \n is received.
 }
 
 int Serial::serialRead(int bytes)
