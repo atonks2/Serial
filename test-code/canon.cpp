@@ -15,10 +15,10 @@ void readGPS()
 void printConfig()
 {
 	termios cur_config = gps.getConfig();
-	std::cout << "c_cflag: " << cur_config.c_cflag << std::endl;
-	std::cout << "c_iflag: " << cur_config.c_iflag << std::endl;
-	std::cout << "c_oflag: " << cur_config.c_oflag << std::endl;
-	std::cout << "c_lflag: " << cur_config.c_lflag << std::endl;
+    std::cout << "c_cflag: " << std::hex << cur_config.c_cflag << std::endl;
+	std::cout << "c_iflag: " << std::hex << cur_config.c_iflag << std::endl;
+	std::cout << "c_oflag: " << std::hex << cur_config.c_oflag << std::endl;
+	std::cout << "c_lflag: " << std::hex << cur_config.c_lflag << std::endl;
 }
 
 int main()
