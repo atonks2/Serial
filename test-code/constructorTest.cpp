@@ -13,7 +13,7 @@ void printConfig(termios config)
 void runTest(Serial dev)
 {
 	std::cout << "Port Configuration: ";
-	termios config = def_const.getConfig();
+	termios config = dev.getConfig();
 	printConfig(config);
 	std::cout << std::endl;
 	dev.serialRead();
