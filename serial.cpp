@@ -32,30 +32,22 @@ SOFTWARE.
 #include <stdlib.h>
 #include <fcntl.h>
 
-Serial::Serial() {
-    PORT = "/dev/ttyUSB0";
-    setBaud(4800);
-    isCanonical = true;
-    init();
-}
-
 int checkPort(std::string port)
 {
     struct stat stat_buf;
     if (stat(port.c_str(), &stat_buf) == 0) return 0;
     else return -1;
 }
-
-Serial::Serial(speed_t baud, std::string port)
+Serial::Serial():Serial(4800, "/dev/ttyUSB0") { }  // Delegating constructor
+Serial::Serial(speed_t baud, std::string port):Serial(baud,port,true){ }  // Delegating constructor
+Serial::Serial(speed_t baud, std::string port, bool canon)  // Target constructor
 {
-    if (checkPort(port) == 0) PORT = port;
-    else PORT = "/dev/ttyUSB0";
-    if (setBaud(baud) != 0) setBaud(4800);
-    isCanonical = true;
-    init();
+	if (setBaud(baud) != 0) setBaud(4800);
+	if (checkPort(port) == 0) PORT = port;
+	else PORT = "/dev/ttyUSB0";
+	isCanonical = canon;
+	init();
 }
-
-Serial::Serial(speed_t baud, std::string port, bool canon):Serial(baud,port) { isCanonical = canon; }
 
 // Open and configure the port
 void Serial::init()
@@ -63,22 +55,22 @@ void Serial::init()
 
     dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
     if (dev_fd < 0) {
-        isOpen = false; 
         perror("Failed to open device: "); 
         exit(-1); 
     }
     else isOpen = true;
 
     tcgetattr(dev_fd, &oldConfig);    
-
     memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
     tcgetattr(dev_fd, &terminalConfiguration);
+
     // TERMIOS CONFIGURATION
 
     // BAUDRATE: Integer multiple of 2400
     // CRTSCTS: Hardware flow control
     // CS8: 8N1
     // CLOCAL: No modem control. (local device)
+	// HUPCL: Generates modem disconnect when port is closed
     // CREAD: Receive chars
     terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
 
