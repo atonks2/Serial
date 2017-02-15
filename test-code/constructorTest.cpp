@@ -10,6 +10,7 @@ void printConfig(termios config)
 	std::cout << "c_lflag: " << std::hex << config.c_lflag << std::endl;
 }
 
+/*
 void runTest(Serial dev)
 {
 	std::cout << "Port Configuration: ";
@@ -19,6 +20,7 @@ void runTest(Serial dev)
 	dev.serialRead();
 	std::cout << "NMEA Sentance: " << dev.getData();
 }
+*/
 
 int main()
 {
@@ -32,14 +34,34 @@ int main()
 	Serial noCanon(4800, "/dev/ttyUSB0", false);
 
 	std::cout << "-------------------------------Default Constructor--------------------------------\n";
-	runTest(def_const);
+	std::cout << "Port Configuration: ";
+	termios config = def_const.getConfig();
+	printConfig(config);
+	std::cout << std::endl;
+	def_const.serialRead();
+	std::cout << "NMEA Sentance: " << def_const.getData();
 
 	std::cout << "------------------------Serial(int baud, std::string port)------------------------\n";
-	runTest(target_one);
+	std::cout << "Port Configuration: ";
+	termios config = target_one.getConfig();
+	printConfig(config);
+	std::cout << std::endl;
+	target_one.serialRead();
+	std::cout << "NMEA Sentance: " << target_one.getData();
 
 	std::cout << "------------------Serial(int baud, std::string port, bool canon)------------------\n";
-	runTest(canon);
+	std::cout << "Port Configuration: ";
+	termios config = caonon.getConfig();
+	printConfig(config);
+	std::cout << std::endl;
+	canon.serialRead();
+	std::cout << "NMEA Sentance: " << canon.getData();
 
 	std::cout << "------------------Serial(int baud, std::string port, bool canon)------------------\n";
-	runTest(canon);
+	std::cout << "Port Configuration: ";
+	termios config = noCanon.getConfig();
+	printConfig(config);
+	std::cout << std::endl;
+	noCanon.serialRead();
+	std::cout << "NMEA Sentance: " << noCanon.getData();
 }
