@@ -33,117 +33,123 @@ SOFTWARE.
 #include <fcntl.h>
 
 Serial::Serial() {
-	PORT = "/dev/ttyUSB0";
-	Serial(4800, PORT, true);
+    PORT = "/dev/ttyUSB0";
+    setBaud(4800);
+    isCanonical = true;
+    init();
+}
+
+int checkPort(std::string port)
+{
+    struct stat stat_buf;
+    if (stat(port.c_str(), &stat_buf) == 0) return 0;
+    else return -1;
 }
 
 Serial::Serial(speed_t baud, std::string port)
 {
-	Serial(baud, port, true);
+    if (checkPort(port) == 0) PORT = port;
+    else PORT = "/dev/ttyUSB0";
+    if (setBaud(baud) != 0) setBaud(4800);
+    isCanonical = true;
+    init();
 }
 
-Serial::Serial(speed_t baud, std::string port, bool canon)
-{
-	// Make a copy of the current configuration so it can be
-	// restored in destructor.
-	isCanonical = canon;
-	if (setBaud(baud) == 0) BAUDRATE = baud;  // baudrate must be multiple of 2400
-	isOpen = false;
-	struct stat stat_buf;  // See if specified port exists
-	if (stat(port.c_str(), &stat_buf) == 0) PORT = port;
-	else {  // Port doesn't exist
-		std::cout << "Device not found." << std::endl;
-		exit(-1);
-	}
-    // open port for read and write, not controlling, ignore DCD line
-    dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
-    if (dev_fd < 0) {
-        perror("In function Serial() failed to open device: ");
-        exit(-1);
-    }
-    else {
-        std::cout << "dev_fd: " << dev_fd << std::endl;
-        isOpen = true;
-    }
-	init();
-}
+Serial::Serial(speed_t baud, std::string port, bool canon):Serial(baud,port) { isCanonical = canon; }
 
 // Open and configure the port
 void Serial::init()
 {
-    tcgetattr(dev_fd, &oldConfig);
-	
-    memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
-	tcgetattr(dev_fd, &terminalConfiguration);
 
-	// TERMIOS CONFIGURATION
-	
-	// BAUDRATE: Integer multiple of 2400
-	// CRTSCTS: Hardware flow control
-	// CS8: 8N1
-	// CLOCAL: No modem control. (local device)
-	// CREAD: Receive chars
-	terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
+    dev_fd = open(PORT.c_str(), O_RDWR | O_NOCTTY);
+    if (dev_fd < 0) {
+        isOpen = false; 
+        perror("Failed to open device: "); 
+        exit(-1); 
+    }
+    else isOpen = true;
+
+    tcgetattr(dev_fd, &oldConfig);    
+
+    memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
+    tcgetattr(dev_fd, &terminalConfiguration);
+    // TERMIOS CONFIGURATION
+
+    // BAUDRATE: Integer multiple of 2400
+    // CRTSCTS: Hardware flow control
+    // CS8: 8N1
+    // CLOCAL: No modem control. (local device)
+    // CREAD: Receive chars
+    terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
 
     // IGNPAR: Ignore parity errors
-	terminalConfiguration.c_iflag |= IGNPAR;
+    terminalConfiguration.c_iflag |= IGNPAR;
 
-	// 0 for raw output
-	terminalConfiguration.c_oflag = 0;
+    // 0 for raw output
+    terminalConfiguration.c_oflag = 0;
 
-	// Setting input mode
-	if (isCanonical == true) {
-        std::cout << "Setting up canonical mode" << std::endl;
+    // Setting input mode
+    if (isCanonical == true) {
         terminalConfiguration.c_lflag |= (ICANON | ECHO | ECHOE);  // Canonical input
     }
-	else {
-		//Configure non-canonical mode
-		terminalConfiguration.c_lflag &= ~(ICANON | ECHO | ECHOE);  // Disable canonical mode and echo
-		terminalConfiguration.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
-		terminalConfiguration.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
-	}
+    else {
+        //Configure non-canonical mode
+        terminalConfiguration.c_lflag &= ~(ICANON | ECHO | ECHOE);  // Disable canonical mode and echo
+        terminalConfiguration.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
+        terminalConfiguration.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
+    }
 	tcflush(dev_fd, TCIFLUSH);
-	applyNewConfig();
+    applyNewConfig();
 }
 
 int Serial::setBaud(speed_t baud)
 {
-	int status = -1;
+    int status = -1;
 
-	switch (baud) {
-	case 2400:
-		status = cfsetspeed(&terminalConfiguration, B2400);
-		break;
-	case 4800:
-		status = cfsetspeed(&terminalConfiguration, B4800);
-		break;
-	case 9600:
-		status = cfsetspeed(&terminalConfiguration, B9600);
-		break;
-	case 19200:
-		status = cfsetspeed(&terminalConfiguration, B19200);
-		break;
-	case 38400:
-		status = cfsetspeed(&terminalConfiguration, B38400);
-		break;
-	case 57600:
-		status = cfsetspeed(&terminalConfiguration, B57600);
-		break;
-	case 115200:
-		status = cfsetspeed(&terminalConfiguration, B115200);
-		break;
-	case 230400:
-		status = cfsetspeed(&terminalConfiguration, B230400);
-		break;
-	default:
-		std::cout << "Invalid baudrate requested.\n";
-		return -1;
-	}
-	if (status < 0) {
-		perror("In function setBaud() failed to set requested baudrate: ");
-		return -1;
-	}
-	else return status;
+    switch (baud) {
+    case 2400:
+        status = cfsetspeed(&terminalConfiguration, B2400);
+        BAUDRATE = B2400;
+        break;
+    case 4800:
+        status = cfsetspeed(&terminalConfiguration, B4800);
+        BAUDRATE = B4800;
+        break;
+    case 9600:
+        status = cfsetspeed(&terminalConfiguration, B9600);
+        BAUDRATE = B9600;
+        break;
+    case 19200:
+        status = cfsetspeed(&terminalConfiguration, B19200);
+        BAUDRATE = B19200;
+        break;
+    case 38400:
+        status = cfsetspeed(&terminalConfiguration, B38400);
+        BAUDRATE = B38400;
+        break;
+    case 57600:
+        status = cfsetspeed(&terminalConfiguration, B57600);
+        BAUDRATE = B57600;
+        break;
+    case 115200:
+        status = cfsetspeed(&terminalConfiguration, B115200);
+        BAUDRATE = B115200;
+        break;
+    case 230400:
+        status = cfsetspeed(&terminalConfiguration, B230400);
+        BAUDRATE = B230400;
+        break;
+    default:
+        std::cout << "Invalid baudrate requested.\n";
+        return -1;
+    }
+    if (status < 0) {
+        perror("In function setBaud() failed to set requested baudrate: ");
+        return -1;
+    }
+    else {
+		return status;
+    }
 }
 
 int Serial::applyNewConfig()
@@ -155,7 +161,7 @@ int Serial::applyNewConfig()
 speed_t Serial::getBaud()
 {
     return cfgetispeed(&terminalConfiguration);
-	}
+}
 
 termios Serial::getConfig()
 {
@@ -168,8 +174,8 @@ int Serial::setupRead()
 {
 	if (!isOpen) return -1;
 	if (tcflush(dev_fd, TCIOFLUSH < 0)) {
-		perror("Could not flush line: ");
-		return -1;
+			perror("Could not flush line: ");
+			return -1;
 	}
     else return 0;
 }
@@ -214,6 +220,6 @@ std::string Serial::getData()
 
 Serial::~Serial()
 {
-	tcsetattr(dev_fd, TCSANOW, &oldConfig); /* Leave port how we found it. */
-	close(dev_fd); /* close the port */
+	tcsetattr(dev_fd, TCSANOW, &oldConfig);  // Leave port how we found it
+	close(dev_fd);
 }
