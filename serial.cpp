@@ -74,7 +74,7 @@ void Serial::init()
     // CLOCAL: No modem control. (local device)
 	// HUPCL: Generates modem disconnect when port is closed
     // CREAD: Receive chars
-    terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
+    terminalConfiguration.c_cflag &= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
 
     // IGNPAR: Ignore parity errors
     terminalConfiguration.c_iflag |= IGNPAR;
@@ -92,7 +92,7 @@ void Serial::init()
         terminalConfiguration.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
         terminalConfiguration.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
     }
-	tcflush(dev_fd, TCIFLUSH);
+	tcflush(dev_fd, TCIOFLUSH);
     applyNewConfig();
 }
 
@@ -148,6 +148,7 @@ int Serial::setBaud(speed_t baud)
 
 int Serial::applyNewConfig()
 {
+    tcdrain(dev_fd);
 	if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) {
         perror("Could not apply configuration");
         return -1;
