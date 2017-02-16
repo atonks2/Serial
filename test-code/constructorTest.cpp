@@ -10,15 +10,29 @@ void printConfig(termios config)
 	std::cout << "c_lflag: " << std::hex << config.c_lflag << std::endl;
 }
 
-void runTest(Serial dev)
+void testBaud(Serial &dev)
+{
+    std::cout << "Testing Baudrate...\n";
+    std::cout << "  Current baud: " << dev.getBaud() << std::endl;
+    std::cout << "  Setting baud to 115200. Exit status: " << dev.setBaud(115200) << std::endl;
+    std::cout << "      New baud: " << std::hex << dev.getBaud() << std::endl;
+    std::cout << "  Restoring to 4800. Exit status: " << dev.setBaud(4800) << std::endl;
+    std::cout << "      New baud: " << std::hex << dev.getBaud() << std::endl;
+}
+
+void runTest(Serial &dev)
 {
 	std::cout << "Port Configuration: ";
 	termios config = dev.getConfig();
 	printConfig(config);
 	std::cout << std::endl;
 
+    testBaud(dev);
+
 	dev.serialRead();
-	std::cout << "NMEA Sentance: " << dev.getData();
+	std::cout << "NMEA Sentance: " << dev.getData() << std::endl;
+
+    std::cout << "Test Completed.\n\n";
 }
 
 int main()
@@ -44,4 +58,6 @@ int main()
 	std::cout << "------------------Serial(int baud, std::string port, bool canon)------------------\n";
 	runTest(canon);
     std::cout << std::endl;
+
+    return 0;
 }
