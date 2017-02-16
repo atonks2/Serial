@@ -38,6 +38,7 @@ int checkPort(std::string port)
     if (stat(port.c_str(), &stat_buf) == 0) return 0;
     else return -1;
 }
+
 Serial::Serial():Serial(4800, "/dev/ttyUSB0") { }  // Delegating constructor
 Serial::Serial(speed_t baud, std::string port):Serial(baud,port,true){ }  // Delegating constructor
 Serial::Serial(speed_t baud, std::string port, bool canon)  // Target constructor
@@ -46,7 +47,8 @@ Serial::Serial(speed_t baud, std::string port, bool canon)  // Target constructo
 	if (checkPort(port) == 0) PORT = port;
 	else PORT = "/dev/ttyUSB0";
 	isCanonical = canon;
-	init();
+	isOpen = false;
+    init();
 }
 
 // Open and configure the port
@@ -140,13 +142,16 @@ int Serial::setBaud(speed_t baud)
         return -1;
     }
     else {
-		return status;
+        return status;
     }
 }
 
 int Serial::applyNewConfig()
 {
-	if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) perror("Could not apply configuration: ");
+	if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) {
+        perror("Could not apply configuration");
+        return -1;
+    }
 	else return 0;
 }
 
