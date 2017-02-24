@@ -59,11 +59,11 @@ public:
 
     // Method for canonical read
     // Returns # of bytes read.
-    int serialRead();
+    std::string serialRead();
 
     // Method for non-canonical read
     // Returns # of bytes read.
-    int serialRead(int bytes);
+    std::string serialRead(int bytes);
 
     int flush();
     // Writes to serial port
@@ -78,8 +78,6 @@ public:
 
     // Returns entire termios struct
     termios getConfig();
-
-    std::string getData();
 
     ~Serial();
 private:

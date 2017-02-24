@@ -74,7 +74,7 @@ void Serial::init()
     // CLOCAL: No modem control. (local device)
 	// HUPCL: Generates modem disconnect when port is closed
     // CREAD: Receive chars
-    terminalConfiguration.c_cflag &= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
+    terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
 
     // IGNPAR: Ignore parity errors
     terminalConfiguration.c_iflag |= IGNPAR;
@@ -90,46 +90,52 @@ void Serial::init()
         //Configure non-canonical mode
         terminalConfiguration.c_lflag &= ~(ICANON | ECHO | ECHOE);  // Disable canonical mode and echo
         terminalConfiguration.c_cc[VMIN] = 0;  // Minimum number of chars to read before returning
-        terminalConfiguration.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
+        terminalConfiguration.c_cc[VTIME] = 4;  // Timeout in deciseconds.
     }
-	tcflush(dev_fd, TCIOFLUSH);
     applyNewConfig();
 }
 
 int Serial::setBaud(speed_t baud)
 {
     int status = -1;
-
     switch (baud) {
-    case 2400:
+	case 2400:
+	case B2400:
         status = cfsetspeed(&terminalConfiguration, B2400);
         BAUDRATE = B2400;
         break;
-    case 4800:
+	case 4800:
+	case B4800:
         status = cfsetspeed(&terminalConfiguration, B4800);
         BAUDRATE = B4800;
         break;
     case 9600:
+	case B9600:
         status = cfsetspeed(&terminalConfiguration, B9600);
         BAUDRATE = B9600;
         break;
     case 19200:
+	case B19200:
         status = cfsetspeed(&terminalConfiguration, B19200);
         BAUDRATE = B19200;
         break;
     case 38400:
+	case B38400:
         status = cfsetspeed(&terminalConfiguration, B38400);
         BAUDRATE = B38400;
         break;
     case 57600:
+	case B57600:
         status = cfsetspeed(&terminalConfiguration, B57600);
         BAUDRATE = B57600;
         break;
     case 115200:
+	case B115200:
         status = cfsetspeed(&terminalConfiguration, B115200);
         BAUDRATE = B115200;
         break;
     case 230400:
+	case B230400:
         status = cfsetspeed(&terminalConfiguration, B230400);
         BAUDRATE = B230400;
         break;
@@ -148,8 +154,7 @@ int Serial::setBaud(speed_t baud)
 
 int Serial::applyNewConfig()
 {
-    tcdrain(dev_fd);
-	if (tcsetattr(dev_fd, TCSANOW, &terminalConfiguration) < 0) {
+	if (tcsetattr(dev_fd, TCSAFLUSH, &terminalConfiguration) < 0) {
         perror("Could not apply configuration");
         return -1;
     }
@@ -178,12 +183,12 @@ int Serial::setupRead()
     else return 0;
 }
 
-int Serial::serialRead()
+std::string Serial::serialRead()
 {
 	return serialRead(255);  // Request 255 bytes. Will return when \n is received.
 }
 
-int Serial::serialRead(int bytes)
+std::string Serial::serialRead(int bytes)
 {
 	if (setupRead() < 0) return -1;
     int buf_size = bytes;
@@ -192,7 +197,7 @@ int Serial::serialRead(int bytes)
 	if (bytesReceived < 0) perror("Read failed: ");
 	else buf[bytesReceived] = '\0';  // Null terminated
 	serialData.assign(buf);  // Store as std::string
-	return bytesReceived;
+	return serialData;
 }
 
 int Serial::flush()
@@ -209,11 +214,6 @@ int Serial::serialWrite(std::string str)
         return -1;
     }
     else return write_status;
-}
-
-std::string Serial::getData()
-{
-	return serialData;
 }
 
 Serial::~Serial()
