@@ -1,6 +1,5 @@
 # Serial class for Linux
-
-no_canon branch adds support for non-canonical mode through a new constructor.
+- Linux serial communication using the termios API
 
 ##Build using g++ with c++11
 - Example:
