@@ -89,7 +89,7 @@ void Serial::init()
     else {
         //Configure non-canonical mode
         terminalConfiguration.c_lflag &= ~(ICANON | ECHO | ECHOE);  // Disable canonical mode and echo
-        terminalConfiguration.c_cc[VMIN] = 1;  // Minimum number of chars to read before returning
+        terminalConfiguration.c_cc[VMIN] = 0;  // Minimum number of chars to read before returning
         terminalConfiguration.c_cc[VTIME] = 0;  // Timeout in deciseconds. 0 to disregard timing between bytes
     }
 	tcflush(dev_fd, TCIOFLUSH);
