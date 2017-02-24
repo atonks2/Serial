@@ -32,22 +32,14 @@ SOFTWARE.
 #include <stdlib.h>
 #include <fcntl.h>
 
-int checkPort(std::string port)
-{
-    struct stat stat_buf;
-    if (stat(port.c_str(), &stat_buf) == 0) return 0;
-    else return -1;
-}
-
 Serial::Serial():Serial(4800, "/dev/ttyUSB0") { }  // Delegating constructor
+
 Serial::Serial(speed_t baud, std::string port):Serial(baud,port,true){ }  // Delegating constructor
-Serial::Serial(speed_t baud, std::string port, bool canon)  // Target constructor
+
+Serial::Serial(speed_t baud, std::string port, bool canon):BAUDRATE(baud),PORT(port)  // Target constructor
 {
-	if (setBaud(baud) != 0) setBaud(4800);
-	if (checkPort(port) == 0) PORT = port;
-	else PORT = "/dev/ttyUSB0";
-	isCanonical = canon;
-	isOpen = false;
+    isCanonical = canon;
+    isOpen = false;
     init();
 }
 
@@ -64,7 +56,7 @@ void Serial::init()
 
     tcgetattr(dev_fd, &oldConfig);    
     memset(&terminalConfiguration, 0, sizeof(terminalConfiguration));  // Clear junk from location of terminalConfiguration to start with clean slate
-    tcgetattr(dev_fd, &terminalConfiguration);
+    terminalConfiguration = oldConfig;
 
     // TERMIOS CONFIGURATION
 
@@ -72,9 +64,10 @@ void Serial::init()
     // CRTSCTS: Hardware flow control
     // CS8: 8N1
     // CLOCAL: No modem control. (local device)
-	// HUPCL: Generates modem disconnect when port is closed
+    // HUPCL: Generates modem disconnect when port is closed
     // CREAD: Receive chars
-    terminalConfiguration.c_cflag |= (BAUDRATE | CS8 | CLOCAL | HUPCL | CREAD);
+    setBaud(BAUDRATE);
+    terminalConfiguration.c_cflag |= (CS8 | CLOCAL | HUPCL | CREAD);
 
     // IGNPAR: Ignore parity errors
     terminalConfiguration.c_iflag |= IGNPAR;
@@ -208,6 +201,7 @@ int Serial::flush()
 int Serial::serialWrite(std::string str)
 {
     if (!isOpen) return -1;
+    tcdrain(dev_fd);
     int write_status =  write(dev_fd, str.c_str(), str.length());
     if (write_status < 0) {
         perror("Failed to write to port: ");

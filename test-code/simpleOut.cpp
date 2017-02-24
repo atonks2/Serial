@@ -7,8 +7,7 @@ Serial gps(baud, port);
 void readGPS(int n)
 {
 	for(int i = 0; i < n; ++i) {
-		gps.serialRead();
-		std::cout << gps.getData();
+	    std::cout << gps.serialRead();
 	}
 }
 

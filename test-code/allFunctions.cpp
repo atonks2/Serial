@@ -12,8 +12,7 @@ void printConfig(termios &config)
 void readGPS(Serial &gps)
 {
     for (int i = 0; i < 5; i++) {
-        gps.serialRead();
-        std::cout << "\nData: " << gps.getData();
+        std::cout << "\nData: " << gps.serialRead();
     }
     std::cout << std::endl;
 }   
@@ -25,22 +24,23 @@ int main()
 
     termios config = gps.getConfig();
     printConfig(config);
+
+    // Set baudrate
+    std::cout << "Setting baud to 4800: " << gps.setBaud(4800) << std::endl;
+    std::cout << "Apply Configuration: " << gps.applyNewConfig() << std::endl;
+    std::cout << "Current baud: " << gps.getBaud() << std::endl;
     readGPS(gps);
 
     // Attempt to change baudrate
-    std::cout << "Flushing GPS: " << gps.flush() << std::endl;
-    std::cout << "Changing baudrate on GPS $PSRF100,1,9600,8,1,0*0d: " << gps.serialWrite("$PSRF100,1,9600,8,1,0*0d\r\n") << std::endl;
+    std::cout << "Changing baudrate on GPS $PSRF100,1,9600,8,1,0*0D: " << gps.serialWrite("$PSRF100,1,9600,8,1,0*0D\r\n") << std::endl;
     std::cout << "Setting serial port baudrate: " << gps.setBaud(9600) << " Applying: " << gps.applyNewConfig() << std::endl;
     std::cout << "Port baudrate: " << gps.getBaud() << std::endl;
-    std::cout << "Flushing GPS: " << gps.flush() << std::endl;
     readGPS(gps);
 
     // Restore baudrate
-    std::cout << "Flushing GPS: " << gps.flush() << std::endl;
-    std::cout << "Changing baudrate on GPS $PSRF100,1,4800,8,1,0*0e: " << gps.serialWrite("$PSRF100,1,4800,8,1,0*0e\r\n") << std::endl;
+    std::cout << "Changing baudrate on GPS $PSRF100,1,4800,8,1,0*0E: " << gps.serialWrite("$PSRF100,1,4800,8,1,0*0E\r\n") << std::endl;
     std::cout << "Setting serial port baudrate: " << gps.setBaud(4800) << " Applying: " << gps.applyNewConfig() << std::endl;
     std::cout << "Port baudrate: " << gps.getBaud() << std::endl;
-    std::cout << "Flushing GPS: " << gps.flush() << std::endl;
     readGPS(gps);
 
     return 0;
