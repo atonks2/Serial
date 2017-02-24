@@ -190,7 +190,7 @@ std::string Serial::serialRead()
 
 std::string Serial::serialRead(int bytes)
 {
-	if (setupRead() < 0) return -1;
+	if (setupRead() < 0) return nullptr;
     int buf_size = bytes;
 	char buf[buf_size];
 	bytesReceived = read(dev_fd, buf, bytes);
